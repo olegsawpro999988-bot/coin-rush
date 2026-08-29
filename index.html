@@ -5,120 +5,277 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Coin Rush Arena</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #090d16;
-      --card-bg: #131b2e;
-      --accent-blue: #3b82f6;
-      --accent-gold: #f59e0b;
-      --accent-red: #ef4444;
-      --text-muted: #94a3b8;
+      --bg: #07090e;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(59, 130, 246, 0.2);
+      --neon-blue: #3b82f6;
+      --neon-purple: #8b5cf6;
+      --neon-gold: #f59e0b;
+      --neon-red: #ef4444;
+      --text-muted: #64748b;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background: var(--bg); color: #fff; display: flex; flex-direction: column; height: 100vh; justify-content: space-between; overflow: hidden; }
 
-    /* Top Bar */
-    .header { padding: 12px 16px; background: rgba(19, 27, 46, 0.8); backdrop-filter: blur(10px); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e293b; }
-    .user-info { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
-    .pool-badge { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 800; padding: 6px 14px; border-radius: 20px; font-size: 12px; box-shadow: 0 0 12px rgba(245, 158, 11, 0.3); }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
 
-    /* Screen Container */
-    .screen { flex: 1; display: none; flex-direction: column; align-items: center; padding: 16px; overflow-y: auto; }
+    body {
+      background: var(--bg);
+      background-image: 
+        radial-gradient(circle at 50% 10%, rgba(59, 130, 246, 0.15), transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1), transparent 40%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Top Header */
+    .header {
+      padding: 14px 20px;
+      background: rgba(10, 14, 23, 0.8);
+      backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .user-info { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+    .avatar { width: 32px; height: 32px; background: linear-gradient(135deg, var(--neon-blue), var(--neon-purple)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    
+    .pool-badge {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.4));
+      border: 1px solid var(--neon-gold);
+      color: #fbbf24;
+      font-weight: 800;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    /* Main Container */
+    .screen { flex: 1; display: none; flex-direction: column; align-items: center; padding: 20px; overflow-y: auto; }
     .active { display: flex; }
 
-    /* Balance Section */
-    .balance-container { text-align: center; margin: 10px 0 20px 0; }
-    .balance-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 1.5px; margin-bottom: 4px; }
-    .balance-amount { font-size: 42px; font-weight: 900; background: linear-gradient(180deg, #fff, #fbbf24); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    /* Balance UI */
+    .balance-box { text-align: center; margin: 15px 0 25px 0; }
+    .balance-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 2px; font-weight: 700; }
+    .balance-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 44px;
+      font-weight: 900;
+      background: linear-gradient(180deg, #ffffff 30%, #fbbf24 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 25px rgba(251, 191, 36, 0.3);
+      margin-top: 4px;
+    }
 
-    /* Cards Layout */
-    .card { width: 100%; max-width: 360px; background: var(--card-bg); border: 1px solid #1e293b; border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 16px; text-align: center; }
+    /* Glass Cards */
+    .glass-card {
+      width: 100%;
+      max-width: 360px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+      pointer-events: none;
+    }
 
-    /* PvP Selector & Buttons */
-    .bets-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
-    .bet-card { background: #1a243d; border: 1px solid #2e3d61; color: #fff; padding: 12px 0; border-radius: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-    .bet-card.active { background: var(--accent-blue); border-color: #60a5fa; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+    /* PvP Selector Buttons */
+    .bet-title { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; font-weight: 600; }
+    .bets-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+    .bet-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      padding: 14px 0;
+      border-radius: 14px;
+      font-weight: 700;
+      font-family: 'Orbitron', sans-serif;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .bet-btn.selected {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.3));
+      border-color: var(--neon-blue);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+      transform: translateY(-2px);
+    }
 
-    .btn-action { width: 100%; padding: 16px; border: none; border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: transform 0.1s ease; }
-    .btn-action:active { transform: scale(0.97); }
-    .btn-red { background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4); }
-    .btn-gold { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3); }
+    /* Animated Action Buttons */
+    .btn-main {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 900;
+      font-family: 'Orbitron', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .btn-main:active { transform: scale(0.97); }
 
-    /* Withdraw Input Form */
-    .input-field { width: 100%; background: #0f172a; border: 1px solid #334155; padding: 14px; border-radius: 12px; color: #fff; font-size: 14px; margin: 12px 0; outline: none; }
-    .input-field:focus { border-color: var(--accent-blue); }
+    .btn-fight {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+    }
+    .btn-fight:hover { box-shadow: 0 0 40px rgba(239, 68, 68, 0.8); }
 
-    /* Bottom Navigation */
-    .nav { height: 70px; background: #0f172a; border-top: 1px solid #1e293b; display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; }
-    .nav-btn { background: none; border: none; color: var(--text-muted); font-size: 11px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .nav-btn.active { color: var(--accent-blue); }
+    .btn-gold {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.4);
+    }
+
+    /* Custom Input */
+    .custom-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 16px;
+      border-radius: 14px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      outline: none;
+      margin: 15px 0 20px 0;
+      text-align: center;
+      transition: border 0.2s;
+    }
+    .custom-input:focus { border-color: var(--neon-blue); box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
+
+    /* Floating Navigation */
+    .nav-wrapper { padding: 0 20px 20px 20px; }
+    .nav {
+      height: 64px;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      transition: color 0.2s;
+    }
+    .nav-btn.active { color: var(--neon-blue); text-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+    .nav-icon { font-size: 18px; }
   </style>
 </head>
 <body>
 
   <div class="header">
-    <div class="user-info"><span id="username">Player</span></div>
-    <div class="pool-badge">🏆 ПУЛ: <span id="pool-stars">0</span> ⭐</div>
+    <div class="user-info">
+      <div class="avatar" id="avatar-icon">⚡</div>
+      <span id="username">Player</span>
+    </div>
+    <div class="pool-badge">ПУЛ: <span id="pool-stars">0</span> ⭐</div>
   </div>
 
-  <!-- ЕКРАН АРЕНИ -->
+  <!-- ТАБ АРЕНИ -->
   <div class="screen active" id="tab-pvp">
-    <div class="balance-container">
+    <div class="balance-box">
       <div class="balance-label">Твій Баланс</div>
-      <div class="balance-amount" id="coins">0</div>
+      <div class="balance-val" id="coins">0</div>
     </div>
 
-    <div class="card">
-      <h3 style="font-size: 20px; margin-bottom: 6px;">⚔️ PvP Дуель</h3>
-      <p style="font-size: 12px; color: var(--text-muted);">Став монети, забирай куш переможця</p>
+    <div class="glass-card">
+      <h2 style="font-family:'Orbitron', sans-serif; font-size: 20px; margin-bottom: 6px;">⚔️ PVP АРЕНА</h2>
+      <div class="bet-title">Обери ставку бою (переможець забирає 90%)</div>
       
       <div class="bets-grid">
-        <div class="bet-card active" onclick="selectBet(100, this)">100</div>
-        <div class="bet-card" onclick="selectBet(500, this)">500</div>
-        <div class="bet-card" onclick="selectBet(2000, this)">2000</div>
+        <button class="bet-btn selected" onclick="selectBet(100, this)">100</button>
+        <button class="bet-btn" onclick="selectBet(500, this)">500</button>
+        <button class="bet-btn" onclick="selectBet(2000, this)">2000</button>
       </div>
 
-      <button class="btn-action btn-red" id="fight-btn" onclick="startFight()">Шукати суперника ⚔️</button>
+      <button class="btn-main btn-fight" id="fight-btn" onclick="startFight()">ШУКАТИ БІЙ ⚔️</button>
     </div>
 
-    <div style="font-size: 12px; color: var(--text-muted);">Перемог на арені: <b id="wins-cnt" style="color: #fff;">0</b></div>
+    <div style="margin-top: 20px; font-size: 13px; color: var(--text-muted); font-weight: 600;">
+      Перемог на арені: <span id="wins-cnt" style="color: #fff;">0</span>
+    </div>
   </div>
 
-  <!-- ЕКРАН СКРИНОК -->
+  <!-- ТАБ СКРИНЬ -->
   <div class="screen" id="tab-boxes">
-    <h2 style="margin-bottom: 16px;">🎁 Таємничі Скрині</h2>
-    <div class="card">
-      <div style="font-size: 60px; margin-bottom: 10px;">📦</div>
-      <h3>Золота Скриня</h3>
-      <p style="font-size: 12px; color: var(--text-muted); margin: 8px 0 16px 0;">Всередині від 5,000 до 50,000 монет!</p>
-      <button class="btn-action btn-gold" onclick="buyBox(25)">Відкрити за 25 ⭐</button>
+    <h2 style="font-family:'Orbitron', sans-serif; margin-bottom: 20px; font-size: 22px;">🎁 ЛУТБОКСИ</h2>
+    <div class="glass-card">
+      <div style="font-size: 70px; margin-bottom: 10px; filter: drop-shadow(0 0 15px rgba(245,158,11,0.5));">📦</div>
+      <h3 style="font-family:'Orbitron', sans-serif;">ЗОЛОТИЙ КЕЙС</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin: 10px 0 20px 0;">Дроп: від 5,000 до 50,000 монет для дуелей!</p>
+      <button class="btn-main btn-gold" onclick="buyBox(25)">ВІДКРИТИ ЗА 25 ⭐</button>
     </div>
   </div>
 
-  <!-- ЕКРАН ВИВОДУ -->
+  <!-- ТАБ ВИВОДУ -->
   <div class="screen" id="tab-withdraw">
-    <h2 style="margin-bottom: 16px;">💸 Вивід Stars</h2>
-    <div class="card">
-      <h3>Обмін монет на Stars</h3>
+    <h2 style="font-family:'Orbitron', sans-serif; margin-bottom: 20px; font-size: 22px;">💸 ВИВІД STARS</h2>
+    <div class="glass-card">
+      <h3 style="font-size: 18px;">ОБМІННИК</h3>
       <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Курс: 10,000 монет = 50 ⭐</p>
       
-      <input type="number" id="withdraw-amount" class="input-field" placeholder="Кількість монет (мін. 10 000)">
-      <button class="btn-action btn-gold" onclick="requestWithdraw()">Запросити вивід 🚀</button>
+      <input type="number" id="withdraw-amount" class="custom-input" placeholder="Кількість монет (від 10 000)">
+      <button class="btn-main btn-gold" onclick="requestWithdraw()">ОФОРМИТИ ВИВІД 🚀</button>
     </div>
   </div>
 
-  <!-- ЕКРАН ЛІДЕРІВ -->
+  <!-- ТАБ ЛІДЕРІВ -->
   <div class="screen" id="tab-top">
-    <h2 style="margin-bottom: 16px;">🏆 Топ Арени</h2>
+    <h2 style="font-family:'Orbitron', sans-serif; margin-bottom: 20px; font-size: 22px;">🏆 ТОП БІЙЦІВ</h2>
     <div id="leaderboard" style="width: 100%; max-width: 360px;"></div>
   </div>
 
   <!-- НАВІГАЦІЯ -->
-  <div class="nav">
-    <button class="nav-btn active" onclick="openTab('pvp', this)">⚔️ Арена</button>
-    <button class="nav-btn" onclick="openTab('boxes', this)">🎁 Скрині</button>
-    <button class="nav-btn" onclick="openTab('withdraw', this)">💸 Вивід</button>
-    <button class="nav-btn" onclick="openTab('top', this)">🏆 Лідери</button>
+  <div class="nav-wrapper">
+    <div class="nav">
+      <button class="nav-btn active" onclick="openTab('pvp', this)">
+        <span class="nav-icon">⚔️</span> Арена
+      </button>
+      <button class="nav-btn" onclick="openTab('boxes', this)">
+        <span class="nav-icon">🎁</span> Скрині
+      </button>
+      <button class="nav-btn" onclick="openTab('withdraw', this)">
+        <span class="nav-icon">💸</span> Вивід
+      </button>
+      <button class="nav-btn" onclick="openTab('top', this)">
+        <span class="nav-icon">🏆</span> Лідери
+      </button>
+    </div>
   </div>
 
   <script>
@@ -127,6 +284,7 @@
 
     const user = tg?.initDataUnsafe?.user || { id: 777, first_name: 'Player' };
     document.getElementById('username').innerText = user.first_name;
+    document.getElementById('avatar-icon').innerText = user.first_name[0] || '⚡';
 
     let coins = 0;
     let currentBet = 100;
@@ -147,8 +305,8 @@
 
     function selectBet(val, el) {
       currentBet = val;
-      document.querySelectorAll('.bet-card').forEach(c => c.classList.remove('active'));
-      el.classList.add('active');
+      document.querySelectorAll('.bet-btn').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
     }
 
     function startFight() {
@@ -163,9 +321,9 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: user.id, bet: currentBet })
         }).then(r => r.json()).then(res => {
-          btn.innerText = 'ШУКАТИ СУПЕРНИКА ⚔️';
+          btn.innerText = 'ШУКАТИ БІЙ ⚔️';
           btn.disabled = false;
-          alert(res.win ? `🎉 Перемога! +${Math.floor(currentBet * 0.9)} монет!` : `❌ Поразка! -${currentBet} монет.`);
+          alert(res.win ? `🎉 ПЕРЕМОГА! +${Math.floor(currentBet * 0.9)} монет!` : `❌ ПОРАЗКА! -${currentBet} монет.`);
           loadData();
         });
       }, 1200);
@@ -174,7 +332,7 @@
     function requestWithdraw() {
       const val = parseInt(document.getElementById('withdraw-amount').value);
       if (!val || val < 10000) return alert('Мінімальна сума виводу: 10,000 монет!');
-      if (val > coins) return alert('Недостатньо монет на балансі!');
+      if (val > coins) return alert('Недостатньо монет!');
 
       fetch('/api/withdraw', {
         method: 'POST',
@@ -182,7 +340,7 @@
         body: JSON.stringify({ id: user.id, amount: val })
       }).then(r => r.json()).then(res => {
         if (res.success) {
-          alert('✅ Заявку на вивід прийнято! Адмін перевірить її протягом 24 годин.');
+          alert('✅ Заявку прийнято! Stars надійдуть на акаунт.');
           loadData();
         } else {
           alert('Помилка: ' + res.error);
@@ -213,9 +371,9 @@
       if (tab === 'top') {
         fetch('/api/leaderboard').then(r => r.json()).then(rows => {
           document.getElementById('leaderboard').innerHTML = rows.map((r, i) => `
-            <div style="background:#131b2e; padding:12px; border-radius:12px; margin-bottom:8px; display:flex; justify-content:space-between; border:1px solid #1e293b;">
-              <span><b>#${i+1}</b> ${r.username}</span>
-              <span style="color:#ef4444; font-weight:bold;">⚔️ ${r.pvp_wins} перемог</span>
+            <div style="background: rgba(18, 24, 38, 0.7); backdrop-filter: blur(10px); padding: 14px 18px; border-radius: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; border: 1px solid rgba(255,255,255,0.05);">
+              <span><b style="color:var(--neon-blue); font-family:'Orbitron';">#${i+1}</b> ${r.username}</span>
+              <span style="color:var(--neon-red); font-weight:800; font-family:'Orbitron';">⚔️ ${r.pvp_wins} WINS</span>
             </div>
           `).join('');
         });
