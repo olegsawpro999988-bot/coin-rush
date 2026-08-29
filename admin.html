@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Rush — Admin Control Panel</title>
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: #1e293b; padding: 18px; border-radius: 12px; border: 1px solid #334155; }
+        .stat-card h4 { margin: 0; color: #94a3b8; font-size: 13px; }
+        .stat-card .val { font-size: 28px; font-weight: bold; margin-top: 8px; color: #38bdf8; }
+        table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #334155; font-size: 14px; }
+        th { background: #0f172a; color: #94a3b8; }
+        input, button, select { padding: 10px 14px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; margin-right: 8px; }
+        button { background: #38bdf8; color: #000; font-weight: bold; cursor: pointer; border: none; }
+        .form-section { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 24px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡️ Coin Rush — Админ-панель</h1>
+        
+        <div style="margin-bottom: 20px;">
+            <input type="password" id="adminKey" placeholder="Введите ADMIN_SECRET" style="width: 250px;">
+            <button onclick="loadAdminData()">Войти / Обновить</button>
+        </div>
+
+        <div class="grid">
+            <div class="stat-card">
+                <h4>Всего игроков</h4>
+                <div class="val" id="stUsers">0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Доход (Telegram Stars)</h4>
+                <div class="val" id="stStars" style="color: #f59e0b;">⭐️ 0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Количество покупок</h4>
+                <div class="val" id="stPurchases">0</div>
+            </div>
+            <div class="stat-card">
+                <h4>Приглашено рефералов</h4>
+                <div class="val" id="stRefs">0</div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>➕ Создать новое задание</h3>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">
+                <input type="text" id="taskTitle" placeholder="Заголовок задания">
+                <input type="text" id="taskDesc" placeholder="Описание">
+                <input type="number" id="taskCoins" placeholder="Монеты">
+                <input type="number" id="taskExp" placeholder="Опыт">
+                <input type="text" id="taskLink" placeholder="Ссылка (необязательно)">
+                <button onclick="createTask()">Создать</button>
+            </div>
+        </div>
+
+        <h3>👥 Последние пользователи</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Telegram ID</th>
+                    <th>Имя / Username</th>
+                    <th>Баланс монет</th>
+                    <th>Уровень</th>
+                    <th>Пригласил друзей</th>
+                </tr>
+            </thead>
+            <tbody id="usersTable"></tbody>
+        </table>
+
+        <h3>⭐️ История покупок (Telegram Stars)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Пользователь</th>
+                    <th>Товар</th>
+                    <th>Звёзд (XTR)</th>
+                    <th>Charge ID</th>
+                </tr>
+            </thead>
+            <tbody id="purchasesTable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        function getKey() {
+            return document.getElementById('adminKey').value || 'super_secret_admin_key_2026';
+        }
+
+        async function loadAdminData() {
+            const key = getKey();
+            try {
+                const sRes = await fetch(`/api/admin/stats?key=${key}`);
+                const stats = await sRes.json();
+                document.getElementById('stUsers').innerText = stats.users;
+                document.getElementById('stStars').innerText = `⭐️ ${stats.revenueStars}`;
+                document.getElementById('stPurchases').innerText = stats.purchasesCount;
+                document.getElementById('stRefs').innerText = stats.referredUsers;
+
+                const uRes = await fetch(`/api/admin/users?key=${key}`);
+                const uData = await uRes.json();
+                const uTable = document.getElementById('usersTable');
+                uTable.innerHTML = '';
+                uData.users.forEach(u => {
+                    uTable.innerHTML += `
+                        <tr>
+                            <td>${u.telegram_id}</td>
+                            <td>${u.first_name || ''} (@${u.username || '—'})</td>
+                            <td>🪙 ${u.coins.toLocaleString()}</td>
+                            <td>Lvl ${u.level}</td>
+                            <td>👥 ${u.invited_count}</td>
+                        </tr>
+                    `;
+                });
+
+                const pRes = await fetch(`/api/admin/purchases?key=${key}`);
+                const pData = await pRes.json();
+                const pTable = document.getElementById('purchasesTable');
+                pTable.innerHTML = '';
+                pData.purchases.forEach(p => {
+                    pTable.innerHTML += `
+                        <tr>
+                            <td>${p.first_name} (@${p.username})</td>
+                            <td>${p.item_title}</td>
+                            <td>⭐️ ${p.stars_amount}</td>
+                            <td style="font-family: monospace; font-size: 11px;">${p.telegram_payment_charge_id}</td>
+                        </tr>
+                    `;
+                });
+            } catch (e) {
+                alert('Ошибка загрузки данных. Проверьте Admin Secret.');
+            }
+        }
+
+        async function createTask() {
+            const key = getKey();
+            const payload = {
+                title: document.getElementById('taskTitle').value,
+                description: document.getElementById('taskDesc').value,
+                rewardCoins: parseInt(document.getElementById('taskCoins').value) || 1000,
+                rewardExp: parseInt(document.getElementById('taskExp').value) || 10,
+                link: document.getElementById('taskLink').value,
+                taskType: 'custom'
+            };
+            const res = await fetch(`/api/admin/tasks/create?key=${key}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Задание создано!');
+                loadAdminData();
+            }
+        }
+    </script>
+</body>
+</html>

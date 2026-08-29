@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Coin Rush Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f111a;
+            --surface-color: #1a1d2e;
+            --surface-card: #23273c;
+            --primary: #f59e0b;
+            --primary-glow: rgba(245, 158, 11, 0.4);
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Верхняя панель игрока */
+        .header {
+            padding: 14px 18px;
+            background: var(--surface-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar-badge {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .user-meta h4 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .level-pill {
+            font-size: 11px;
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 2px;
+        }
+
+        /* Контейнер вкладок */
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+            padding: 16px;
+            padding-bottom: 90px;
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Экран Тапалки */
+        .main-game-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .balance-container {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .balance-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .balance-amount {
+            font-size: 40px;
+            font-weight: 800;
+            color: var(--primary);
+            text-shadow: 0 0 20px var(--primary-glow);
+            margin: 6px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* Большая монета */
+        .coin-wrapper {
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .coin-button {
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #fbbf24 0%, #d97706 60%, #92400e 100%);
+            border: 8px solid #fef3c7;
+            box-shadow: 0 0 40px rgba(245, 158, 11, 0.45), inset 0 0 20px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.08s ease;
+            position: relative;
+        }
+
+        .coin-button:active {
+            transform: scale(0.94);
+        }
+
+        .coin-inner-icon {
+            font-size: 90px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        /* Плавающие цифры кликов */
+        .floating-score {
+            position: absolute;
+            color: #fff;
+            font-size: 26px;
+            font-weight: 800;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            pointer-events: none;
+            animation: floatUp 0.8s forwards ease-out;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-90px) scale(1.3); }
+        }
+
+        /* Энергия */
+        .energy-wrapper {
+            width: 100%;
+            background: var(--surface-card);
+            border-radius: 16px;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .energy-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            width: 100%;
+            transition: width 0.2s ease;
+        }
+
+        /* Карточки и списки */
+        .card {
+            background: var(--surface-card);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255,255,255,0.04);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-action:active {
+            opacity: 0.8;
+        }
+
+        .btn-stars {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Нижняя панель навигации */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 72px;
+            background: var(--surface-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            font-size: 11px;
+            cursor: pointer;
+            padding: 8px 14px;
+            border-radius: 10px;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 22px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="user-info">
+            <div class="avatar-badge" id="userAvatar">U</div>
+            <div class="user-meta">
+                <h4 id="userName">Player</h4>
+                <div class="level-pill" id="userLevel">Уровень 1</div>
+            </div>
+        </div>
+        <button class="btn-action btn-stars" onclick="openStarsOfficial()">
+            ⭐️ Купить Stars
+        </button>
+    </div>
+
+    <div class="content-area">
+        
+        <div id="tab-game" class="tab-pane active">
+            <div class="main-game-screen">
+                <div class="balance-container">
+                    <div class="balance-title">Баланс монет</div>
+                    <div class="balance-amount">
+                        <span>🪙</span>
+                        <span id="coinBalance">0</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted);" id="multiplierBadge">Множитель: x1.0</div>
+                </div>
+
+                <div class="coin-wrapper">
+                    <div class="coin-button" id="tapBtn">
+                        <div class="coin-inner-icon">⚡️</div>
+                    </div>
+                </div>
+
+                <div class="energy-wrapper">
+                    <div class="energy-header">
+                        <span>⚡️ Энергия</span>
+                        <span id="energyText">1000 / 1000</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="energyBar" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-tasks" class="tab-pane">
+            <h3 style="margin-bottom: 12px;">🎁 Ежедневные награды</h3>
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <b>Ежедневный вход</b>
+                        <p style="font-size: 12px; color: var(--text-muted);" id="streakDesc">День 1: +1,000 монет</p>
+                    </div>
+                    <button class="btn-action" id="claimDailyBtn" onclick="claimDailyReward()">Забрать</button>
+                </div>
+            </div>
+
+            <h3 style="margin: 16px 0 12px;">📋 Список заданий</h3>
+            <div id="tasksList"></div>
+        </div>
+
+        <div id="tab-shop" class="tab-pane">
+            <h3 style="margin-bottom: 6px;">⭐️ Магазин Бустеров (Stars)</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+                Официальные платежи через систему Telegram Stars. Без ввода данных банковских карт.
+            </p>
+            <div id="shopList"></div>
+        </div>
+
+        <div id="tab-ref" class="tab-pane">
+            <h3 style="margin-bottom: 12px;">👥 Пригласи друга</h3>
+            <div class="card" style="text-align: center;">
+                <p style="font-size: 14px; margin-bottom: 10px;">Получайте <b>+2,500 монет</b> за каждого приглашенного друга!</p>
+                <button class="btn-action" style="width: 100%; padding: 12px;" onclick="shareRefLink()">
+                    🔗 Поделиться ссылкой
+                </button>
+            </div>
+        </div>
+
+        <div id="tab-leaderboard" class="tab-pane">
+            <h3 style="margin-bottom: 12px;">🏆 Топ игроков</h3>
+            <div id="leaderboardList"></div>
+        </div>
+
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchTab('tab-game', this)">
+            <div class="nav-icon">🪙</div>
+            <span>Добыча</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('tab-tasks', this)">
+            <div class="nav-icon">📋</div>
+            <span>Задания</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('tab-shop', this)">
+            <div class="nav-icon">⭐️</div>
+            <span>Магазин</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('tab-ref', this)">
+            <div class="nav-icon">👥</div>
+            <span>Друзья</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('tab-leaderboard', this)">
+            <div class="nav-icon">🏆</div>
+            <span>Топ</span>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp API
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.expand();
+            tg.ready();
+        }
+
+        // Состояние клиента
+        let state = {
+            initData: tg?.initData || '',
+            userId: tg?.initDataUnsafe?.user?.id || 12345,
+            coins: 0,
+            energy: 1000,
+            maxEnergy: 1000,
+            multiplier: 1.0,
+            level: 1
+        };
+
+        // Web Audio API: Синтез звуков для нулевых задержек
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playClickSound() {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.05);
+            } catch(e) {}
+        }
+
+        // Тактильная виброотдача
+        function triggerHaptic() {
+            if (tg && tg.HapticFeedback) {
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+        }
+
+        // Навигация
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            el.classList.add('active');
+
+            if (tabId === 'tab-tasks') loadTasks();
+            if (tabId === 'tab-shop') loadShop();
+            if (tabId === 'tab-leaderboard') loadLeaderboard();
+        }
+
+        // Первоначальный вход и синхронизация
+        async function syncUser() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const ref = urlParams.get('ref') || tg?.initDataUnsafe?.start_param;
+
+            try {
+                const res = await fetch('/api/auth/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ initData: state.initData, debugId: state.userId, ref })
+                });
+                const data = await res.json();
+                if (data.user) {
+                    state.coins = data.user.coins;
+                    state.energy = data.user.energy;
+                    state.maxEnergy = data.user.max_energy;
+                    state.multiplier = data.user.multiplier;
+                    state.level = data.user.level;
+
+                    document.getElementById('userName').innerText = data.user.first_name || 'Player';
+                    document.getElementById('userAvatar').innerText = (data.user.first_name || 'P')[0].toUpperCase();
+                    updateUI();
+                }
+            } catch (err) {
+                console.error('Sync error:', err);
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('coinBalance').innerText = Number(state.coins).toLocaleString();
+            document.getElementById('userLevel').innerText = `Уровень ${state.level}`;
+            document.getElementById('multiplierBadge').innerText = `Множитель: x${state.multiplier}`;
+            document.getElementById('energyText').innerText = `${Math.floor(state.energy)} / ${state.maxEnergy}`;
+            document.getElementById('energyBar').style.width = `${(state.energy / state.maxEnergy) * 100}%`;
+        }
+
+        // Логика тапа
+        const tapBtn = document.getElementById('tapBtn');
+        tapBtn.addEventListener('pointerdown', async (e) => {
+            if (state.energy < 1) return;
+
+            playClickSound();
+            triggerHaptic();
+
+            // Создание всплывающего бонуса на экране
+            const scorePopup = document.createElement('div');
+            scorePopup.className = 'floating-score';
+            scorePopup.innerText = `+${Math.round(1 * state.multiplier)}`;
+            scorePopup.style.left = `${e.clientX - 15}px`;
+            scorePopup.style.top = `${e.clientY - 30}px`;
+            document.body.appendChild(scorePopup);
+            setTimeout(() => scorePopup.remove(), 800);
+
+            // Локальный оптимистичный отклик
+            state.energy -= 1;
+            state.coins += Math.round(1 * state.multiplier);
+            updateUI();
+
+            // Отправка запроса на бэкенд
+            fetch('/api/game/tap', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ initData: state.initData, debugId: state.userId, taps: 1 })
+            }).then(r => r.json()).then(data => {
+                if (data.coins) {
+                    state.coins = data.coins;
+                    state.energy = data.energy;
+                    state.level = data.level;
+                    updateUI();
+                }
+            });
+        });
+
+        // Пассивная регенерация энергии в UI
+        setInterval(() => {
+            if (state.energy < state.maxEnergy) {
+                state.energy = Math.min(state.maxEnergy, state.energy + 2);
+                updateUI();
+            }
+        }, 1000);
+
+        // Получение ежедневного бонуса
+        async function claimDailyReward() {
+            const res = await fetch('/api/game/claim-daily', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ initData: state.initData, debugId: state.userId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`🎉 Вы получили ежедневную награду: +${data.reward} монет! Стрик: ${data.streak} дн.`);
+                syncUser();
+            } else {
+                alert('⏳ Ежедневный бонус уже получен. Возвращайтесь позже!');
+            }
+        }
+
+        // Загрузка заданий
+        async function loadTasks() {
+            const res = await fetch('/api/tasks/list', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ initData: state.initData, debugId: state.userId })
+            });
+            const data = await res.json();
+            const list = document.getElementById('tasksList');
+            list.innerHTML = '';
+            data.tasks.forEach(t => {
+                list.innerHTML += `
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <b>${t.title}</b>
+                                <p style="font-size: 12px; color: var(--text-muted);">${t.description}</p>
+                                <span style="font-size: 11px; color: var(--primary);">+${t.reward_coins} монет</span>
+                            </div>
+                            <button class="btn-action" ${t.completed ? 'disabled style="background: #475569;"' : `onclick="completeTask(${t.id}, '${t.link}')"`}>
+                                ${t.completed ? 'Выполнено' : 'Начать'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function completeTask(taskId, link) {
+            if (link) window.open(link, '_blank');
+            const res = await fetch('/api/tasks/complete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ initData: state.initData, debugId: state.userId, taskId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Задание выполнено! Начислено +${data.rewardCoins} монет.`);
+                loadTasks();
+                syncUser();
+            }
+        }
+
+        // Загрузка магазина и покупка через Telegram Stars
+        async function loadShop() {
+            const res = await fetch('/api/shop/items');
+            const data = await res.json();
+            const list = document.getElementById('shopList');
+            list.innerHTML = '';
+            data.items.forEach(item => {
+                list.innerHTML += `
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <b>${item.title}</b>
+                                <p style="font-size: 12px; color: var(--text-muted);">${item.description}</p>
+                            </div>
+                            <button class="btn-action btn-stars" onclick="buyItem('${item.id}')">
+                                ⭐️ ${item.stars_price}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function buyItem(itemId) {
+            const res = await fetch('/api/payment/create-invoice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ initData: state.initData, debugId: state.userId, itemId })
+            });
+            const data = await res.json();
+
+            if (data.invoiceLink) {
+                // Открытие нативного окна оплаты Telegram Stars в Mini App
+                if (tg && tg.openInvoice) {
+                    tg.openInvoice(data.invoiceLink, (status) => {
+                        if (status === 'paid') {
+                            alert('⭐️ Оплата прошла успешно! Бустер активирован.');
+                            syncUser();
+                        }
+                    });
+                } else {
+                    window.open(data.invoiceLink, '_blank');
+                }
+            } else {
+                alert('Ошибка создания платежа.');
+            }
+        }
+
+        // Официальная покупка Telegram Stars через Fragment / Telegram
+        function openStarsOfficial() {
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink('https://t.me/PremiumBot');
+            } else {
+                window.open('https://fragment.com/stars', '_blank');
+            }
+        }
+
+        // Реферальная система
+        function shareRefLink() {
+            const refLink = `https://t.me/share/url?url=https://t.me/YOUR_BOT_USERNAME?start=${state.userId}&text=Играй со мной в Coin Rush и получай бонусы!`;
+            if (tg && tg.openTelegramLink) {
+                tg.openTelegramLink(refLink);
+            } else {
+                window.open(refLink, '_blank');
+            }
+        }
+
+        // Таблица лидеров
+        async function loadLeaderboard() {
+            const res = await fetch('/api/leaderboard');
+            const data = await res.json();
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = '';
+            data.leaderboard.forEach((user, idx) => {
+                list.innerHTML += `
+                    <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <b style="color: ${idx < 3 ? 'var(--primary)' : 'inherit'}">#${idx + 1}</b>
+                            <div>
+                                <b>${user.first_name || user.username}</b>
+                                <div style="font-size: 11px; color: var(--text-muted);">Уровень ${user.level}</div>
+                            </div>
+                        </div>
+                        <b style="color: var(--primary);">🪙 ${Number(user.coins).toLocaleString()}</b>
+                    </div>
+                `;
+            });
+        }
+
+        // Запуск приложения
+        syncUser();
+    </script>
+</body>
+</html>
