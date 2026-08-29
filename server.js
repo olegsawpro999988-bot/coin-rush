@@ -14,7 +14,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const PORT = process.env.PORT || 3000;
 const BOT_TOKEN = process.env.BOT_TOKEN || 'YOUR_TELEGRAM_BOT_TOKEN';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'super_secret_admin_key_2026';
-const WEBAPP_URL = process.env.WEBAPP_URL || 'https://your-domain.com';
+const WEBAPP_URL = process.env.WEBAPP_URL || 'https://coin-rush-j9uz.onrender.com';
 
 // Инициализация Telegram-бота
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
