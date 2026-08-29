@@ -21,6 +21,7 @@ db.serialize(() => {
     stars_spent INTEGER DEFAULT 0
   )`);
   db.run(`CREATE TABLE IF NOT EXISTS pool (id INTEGER PRIMARY KEY, total_stars INTEGER DEFAULT 0)`);
+  db.run(`CREATE TABLE IF NOT EXISTS withdraws (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, coins INTEGER, stars INTEGER, status TEXT)`);
   db.run(`INSERT OR IGNORE INTO pool (id, total_stars) VALUES (1, 500)`);
 });
 
@@ -29,10 +30,10 @@ if (BOT_TOKEN) {
   bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
   bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, '⚔️ Coin Rush PvP: Бийся на монети та забирай Stars!', {
+    bot.sendMessage(msg.chat.id, '⚔️ Coin Rush PvP: Грай, перемагай та виводь Stars!', {
       reply_markup: {
         inline_keyboard: [[
-          { text: '🔥 Грати та Битися', web_app: { url: `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'coin-rush-j9uz.onrender.com'}` } }
+          { text: '🔥 Грати зараз', web_app: { url: `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'coin-rush-j9uz.onrender.com'}` } }
         ]]
       }
     });
@@ -49,13 +50,13 @@ if (BOT_TOKEN) {
     db.run('UPDATE users SET stars_spent = stars_spent + ? WHERE id = ?', [stars, userId]);
 
     if (payload.item === 'lootbox') {
-      const rewardCoins = Math.floor(Math.random() * 50000) + 5000;
+      const rewardCoins = Math.floor(Math.random() * 45000) + 5000;
       db.run('UPDATE users SET coins = coins + ? WHERE id = ?', [rewardCoins, userId]);
     }
   });
 }
 
-// Завантаження профілю та пулу
+// Завантаження профілю
 app.post('/api/user/load', (req, res) => {
   const { id, username } = req.body;
   db.get('SELECT * FROM users WHERE id = ?', [id], (err, user) => {
@@ -69,13 +70,13 @@ app.post('/api/user/load', (req, res) => {
   });
 });
 
-// Розрахунок результату PvP Дуелі (Симуляція реального бота/суперника)
+// Розрахунок бою
 app.post('/api/pvp/fight', (req, res) => {
   const { id, bet } = req.body;
   db.get('SELECT coins, pvp_wins FROM users WHERE id = ?', [id], (err, user) => {
     if (!user || user.coins < bet) return res.status(400).json({ error: 'Недостатньо монет' });
 
-    const isWin = Math.random() > 0.45; // 55% шанс виграшу або поразки
+    const isWin = Math.random() > 0.48;
     const resultCoins = isWin ? user.coins + Math.floor(bet * 0.9) : user.coins - bet;
     const newWins = isWin ? user.pvp_wins + 1 : user.pvp_wins;
 
@@ -85,15 +86,31 @@ app.post('/api/pvp/fight', (req, res) => {
   });
 });
 
-// Інвойс на Скриню (Lootbox)
+// Заявка на вивід
+app.post('/api/withdraw', (req, res) => {
+  const { id, amount } = req.body;
+  db.get('SELECT coins FROM users WHERE id = ?', [id], (err, user) => {
+    if (!user || user.coins < amount) return res.status(400).json({ error: 'Недостатньо монет' });
+
+    const starsToWithdraw = Math.floor((amount / 10000) * 50);
+
+    db.run('UPDATE users SET coins = coins - ? WHERE id = ?', [amount, id], () => {
+      db.run('INSERT INTO withdraws (user_id, coins, stars, status) VALUES (?, ?, ?, ?)', [id, amount, starsToWithdraw, 'pending'], () => {
+        res.json({ success: true });
+      });
+    });
+  });
+});
+
+// Інвойс на Скриню
 app.post('/api/buy-box', async (req, res) => {
   const { id, stars } = req.body;
   if (!bot) return res.status(500).json({ error: 'Bot not configured' });
 
   try {
     const link = await bot.createInvoiceLink(
-      '🎁 Таємнича Скриня',
-      'Шанс вибити від 5,000 до 50,000 монет!',
+      '🎁 Золота Скриня',
+      'Вибей до 50 000 монет!',
       JSON.stringify({ item: 'lootbox', userId: id }),
       '', 'XTR', [{ label: 'Скриня', amount: stars }]
     );
@@ -103,9 +120,9 @@ app.post('/api/buy-box', async (req, res) => {
   }
 });
 
-// ТОП переможців
+// Топ бійців
 app.get('/api/leaderboard', (req, res) => {
-  db.all('SELECT username, pvp_wins, coins FROM users ORDER BY pvp_wins DESC LIMIT 10', (err, rows) => {
+  db.all('SELECT username, pvp_wins FROM users ORDER BY pvp_wins DESC LIMIT 10', (err, rows) => {
     res.json(rows || []);
   });
 });
