@@ -510,3 +510,11 @@ app.post('/api/admin/tasks/create', authAdmin, (req, res) => {
 app.listen(PORT, () => {
     console.log(`Coin Rush Mini App Server running at http://localhost:${PORT}`);
 });
+const express = require('express');
+const app = express();
+
+// ОЦЯ СТРОЧКА ИСПРАВЛЯЕТ ЧЕРНЫЙ ЭКРАН:
+app.use(express.static(__dirname));
+
+app.use(express.json());
+
